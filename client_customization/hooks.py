@@ -262,3 +262,18 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [
+            ["dt", "=", "Purchase Order"],
+            ["fieldname", "in", ["first_number", "second_number", "totalke"]]
+        ]
+    },
+    {
+        "dt": "Client Script",
+        "filters": [
+            ["name", "=", "Add the Numbers"]
+        ]
+    }
+]

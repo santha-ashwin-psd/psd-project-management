@@ -1,0 +1,13 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Purchase Order",
+  "enabled": 1,
+  "modified": "2026-09-07 15:27:38.760505",
+  "module": null,
+  "name": "Add the Numbers",
+  "script": "frappe.ui.form.on(\"Purchase Order\", {\n    first_number: function(frm) {\n        calculate_total(frm);\n    },\n\n    second_number: function(frm) {\n        calculate_total(frm);\n    }\n});\n\nfunction calculate_total(frm) {\n    let first = flt(frm.doc.first_number);\n    let second = flt(frm.doc.second_number);\n\n    frm.set_value(\"totalke\", first + second);\n}",
+  "view": "Form"
+ }
+]
