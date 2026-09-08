@@ -267,7 +267,7 @@ fixtures = [
         "dt": "Custom Field",
         "filters": [
             ["dt", "=", "Purchase Order"],
-            ["fieldname", "in", ["first_number", "second_number", "totalke"]]
+            ["fieldname", "in", ["first_number", "second_number", "totalke","custom_demo_ke_"]]
         ]
     },
     {
