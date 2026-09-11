@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Project Filter on TASK record",
+    "owner": "demoprojectuser1@gmail.com",
+    "dt": "Task",
+    "view": "Form",
+    "enabled": 1,
+    "script": "frappe.ui.form.on('Task', {\n    onload: function(frm) {\n        frappe.db.get_list('ToDo', {\n            filters: {\n                'reference_type': 'Project',\n                'allocated_to': frappe.session.user,\n                'status': 'Open'\n            },\n            fields: ['reference_name']\n        }).then(records => {\n            let assigned_projects = records.map(row => row.reference_name);\n\n            if (assigned_projects.length === 0) {\n                assigned_projects = [\"No Assigned Projects Found\"];\n            }\n\n            frm.set_query('project', function() {\n                return {\n                    filters: [\n                        ['Project', 'name', 'in', assigned_projects]\n                    ]\n                };\n            });\n        });\n    }\n});\n"
+  },
+  {
+    "name": "Filter The User",
+    "owner": "kishoreps362@gmail.com",
+    "dt": "Project",
+    "view": "Form",
+    "enabled": 1,
+    "script": "frappe.ui.form.on(\"Project\", {\n    refresh: function(frm) {\n\n        $(\".form-assignments\").hide();\n\n        if (\n            frappe.user_roles.includes(\"Projects Manager\") ||\n            frappe.user === \"Administrator\"\n        ) {\n            frm.set_df_property(\n                \"custom_assign_project_user\",\n                \"hidden\",\n                0\n            );\n        } else {\n            frm.set_df_property(\n                \"custom_assign_project_user\",\n                \"hidden\",\n                1\n            );\n\n            if (\n                frm.is_new() &&\n                frappe.user_roles.includes(\"Projects User\") &&\n                !frm.doc.custom_assign_project_user\n            ) {\n                frm.set_value(\n                    \"custom_assign_project_user\",\n                    frappe.session.user\n                );\n            }\n        }\n\n        frm.set_query(\n            \"custom_assign_project_user\",\n            function() {\n                return {\n                    query: \"frappe.core.doctype.user.user.user_query\",\n                    filters: {\n                        enabled: 1,\n                        user_type: \"System User\",\n                        role: \"Projects User\"\n                    }\n                };\n            }\n        );\n    },\n\n    after_save: function(frm) {\n\n        if (frm.doc.custom_assign_project_user) {\n\n            frappe.call({\n                method: \"frappe.desk.form.assign_to.add\",\n\n                args: {\n                    doctype: frm.doc.doctype,\n                    name: frm.doc.name,\n                    assign_to: [\n                        frm.doc.custom_assign_project_user\n                    ],\n                    description: __(\n                        \"Project assigned via Manager form selector.\"\n                    ),\n                    priority: \"Medium\"\n                },\n\n                callback: function(r) {\n\n                    if (!r.exc) {\n\n                        frappe.show_alert({\n                            message: __(\n                                \"Successfully assigned to {0}\",\n                                [\n                                    frm.doc.custom_assign_project_user\n                                ]\n                            ),\n                            indicator: \"green\"\n                        });\n\n                    }\n\n                }\n            });\n        }\n    }\n});"
+  }
+]
