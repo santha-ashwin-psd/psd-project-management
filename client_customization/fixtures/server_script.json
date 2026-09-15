@@ -1,0 +1,21 @@
+[
+ {
+  "allow_guest": 0,
+  "api_method": "get_project_users",
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "Before Insert",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-09-11 12:26:54.876920",
+  "module": null,
+  "name": "Validate Project Assignment Role",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "ToDo",
+  "script": "users = frappe.get_all(\n    \"Has Role\",\n    filters={\n        \"role\": \"Project User\"\n    },\n    fields=[\"parent\"],\n    limit_page_length=0\n)\n\nuser_names = [row.parent for row in users]\n\nif not user_names:\n    frappe.response[\"message\"] = []\nelse:\n    frappe.response[\"message\"] = frappe.get_all(\n        \"User\",\n        filters={\n            \"name\": [\"in\", user_names],\n            \"user_type\": \"System User\",\n            \"enabled\": 1\n        },\n        fields=[\"name\", \"full_name\"],\n        order_by=\"full_name asc\",\n        limit_page_length=0\n    )",
+  "script_type": "API"
+ }
+]

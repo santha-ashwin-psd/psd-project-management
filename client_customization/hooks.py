@@ -268,7 +268,6 @@ app_license = "mit"
 
 
 
-
 fixtures = [
     {
         "dt": "Custom Field",
