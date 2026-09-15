@@ -264,27 +264,47 @@ app_license = "mit"
 
 
 
+
+
+
 fixtures = [
     {
         "dt": "Custom Field",
         "filters": [
-            ["dt", "=", "Purchase Order"],
-            ["fieldname", "in", ["first_number", "second_number", "totalke", "custom_demo_ke_"]]
+            ["name", "in", [
+                "Project-custom_assign_project_user",
+                "Task-custom_activity_type",
+                "Task-custom_assign_employee"
+            ]]
         ]
     },
     {
         "dt": "Client Script",
         "filters": [
-            ["name", "=", "Add the Numbers"]
+            ["name", "in", [
+                "Project Filter on TASK record",
+                "Filter The User",
+                "Confirm Employee Assignment"
+            ]]
         ]
     },
     {
         "dt": "Server Script",
         "filters": [
             ["name", "in", [
-                "Job Card Whatsapp Flow",
-                "Workorder Conformation Message"
+                "Validate Project Assignment Role",
+                "Create Timesheet From Task"
             ]]
         ]
     }
 ]
+
+
+permission_query_conditions = {
+    "Project": "client_customization.permissions.project_query",
+    "Task": "client_customization.permissions.task_query",
+    "Timesheet": "client_customization.permissions.timesheet_query"
+}
+
+
+

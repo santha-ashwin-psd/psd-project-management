@@ -2,12 +2,34 @@
  {
   "docstatus": 0,
   "doctype": "Client Script",
-  "dt": "Purchase Order",
+  "dt": "Project",
   "enabled": 1,
-  "modified": "2026-09-07 15:27:38.760505",
+  "modified": "2026-09-11 16:04:29.549738",
   "module": null,
-  "name": "Add the Numbers",
-  "script": "frappe.ui.form.on(\"Purchase Order\", {\n    first_number: function(frm) {\n        calculate_total(frm);\n    },\n\n    second_number: function(frm) {\n        calculate_total(frm);\n    }\n});\n\nfunction calculate_total(frm) {\n    let first = flt(frm.doc.first_number);\n    let second = flt(frm.doc.second_number);\n\n    frm.set_value(\"totalke\", first + second);\n}",
+  "name": "Filter The User",
+  "script": "frappe.ui.form.on(\"Project\", {\n    refresh: function(frm) {\n\n        // 1. Hide standard sidebar Assign To\n        $(\".form-assignments\").hide();\n\n        // 2. Show custom field only for Projects Manager / Administrator\n        if (\n            frappe.user_roles.includes(\"Projects Manager\") ||\n            frappe.user === \"Administrator\"\n        ) {\n            frm.set_df_property(\n                \"custom_assign_project_user\",\n                \"hidden\",\n                0\n            );\n        } else {\n            frm.set_df_property(\n                \"custom_assign_project_user\",\n                \"hidden\",\n                1\n            );\n\n            // 3. When Projects User creates a NEW Project,\n            // automatically assign the Project to themselves\n            if (\n                frm.is_new() &&\n                frappe.user_roles.includes(\"Projects User\") &&\n                !frm.doc.custom_assign_project_user\n            ) {\n                frm.set_value(\n                    \"custom_assign_project_user\",\n                    frappe.session.user\n                );\n            }\n        }\n\n        // 4. Filter custom field to show only Projects User\n        frm.set_query(\n            \"custom_assign_project_user\",\n            function() {\n\n                return {\n                    query: \"frappe.core.doctype.user.user.user_query\",\n                    filters: {\n                        enabled: 1,\n                        user_type: \"System User\",\n                        role: \"Projects User\"\n                    }\n                };\n\n            }\n        );\n    },\n\n    after_save: function(frm) {\n\n        // 5. Create ToDo assignment\n        if (frm.doc.custom_assign_project_user) {\n\n            frappe.call({\n                method: \"frappe.desk.form.assign_to.add\",\n\n                args: {\n                    doctype: frm.doc.doctype,\n                    name: frm.doc.name,\n\n                    assign_to: [\n                        frm.doc.custom_assign_project_user\n                    ],\n\n                    description: __(\n                        \"Project assigned via Manager form selector.\"\n                    ),\n\n                    priority: \"Medium\"\n                },\n\n                callback: function(r) {\n\n                    if (!r.exc) {\n\n                        frappe.show_alert({\n                            message: __(\n                                \"Successfully assigned to {0}\",\n                                [\n                                    frm.doc.custom_assign_project_user\n                                ]\n                            ),\n                            indicator: \"green\"\n                        });\n\n                    }\n\n                }\n            });\n        }\n    }\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Task",
+  "enabled": 1,
+  "modified": "2026-09-11 16:19:16.481643",
+  "module": null,
+  "name": "Project Filter on TASK record",
+  "script": "frappe.ui.form.on('Task', {\n    onload: function(frm) {\n        // 1. Fetch all project names assigned to the currently logged-in user\n        frappe.db.get_list('ToDo', {\n            filters: {\n                'reference_type': 'Project',\n                'allocated_to': frappe.session.user,\n                'status': 'Open'\n            },\n            fields: ['reference_name']\n        }).then(records => {\n            // Extract project names into a clean array list (e.g. ['PROJ-0001', 'PROJ-0002'])\n            let assigned_projects = records.map(row => row.reference_name);\n\n            // 2. If the user isn't assigned to any projects, pass a dummy value so they see an empty list\n            if (assigned_projects.length === 0) {\n                assigned_projects = [\"No Assigned Projects Found\"];\n            }\n\n            // 3. Inject the dynamic filter array straight into the standard 'project' link field\n            frm.set_query('project', function() {\n                return {\n                    filters: [\n                        ['Project', 'name', 'in', assigned_projects]\n                    ]\n                };\n            });\n        });\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Task",
+  "enabled": 1,
+  "modified": "2026-09-15 15:34:18.363715",
+  "module": null,
+  "name": "Confirm Employee Assignment",
+  "script": "frappe.ui.form.on('Task', {\n\n    before_save: function(frm) {\n\n        // If confirmation was already given, allow the save\n        if (frm._employee_assignment_confirmed) {\n            frm._employee_assignment_confirmed = false;\n            return;\n        }\n\n        // Only ask confirmation when Employee is selected\n        if (frm.doc.custom_assign_employee) {\n\n            // Stop the current save\n            frappe.validated = false;\n\n            frappe.confirm(\n                'Are you sure you want to assign Employee \"' +\n                frm.doc.custom_assign_employee +\n                '\" to this Task \"' +\n                frm.doc.subject +\n                '\"?',\n\n                function() {\n\n                    // YES\n                    frm._employee_assignment_confirmed = true;\n\n                    // Save the Task again\n                    frm.save();\n                },\n\n                function() {\n\n                    // NO\n                    frappe.msgprint(\n                        'Task was not saved. Please review the assigned Employee.'\n                    );\n                }\n            );\n        }\n    }\n});",
   "view": "Form"
  }
 ]
