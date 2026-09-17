@@ -263,10 +263,6 @@ app_license = "mit"
 # ignore_translatable_strings_from = []
 
 
-
-
-
-
 fixtures = [
     {
         "dt": "Custom Field",
@@ -274,7 +270,8 @@ fixtures = [
             ["name", "in", [
                 "Project-custom_assign_project_user",
                 "Task-custom_activity_type",
-                "Task-custom_assign_employee"
+                "Task-custom_assign_employee",
+                "Task-custom_employee_group"
             ]]
         ]
     },
@@ -284,7 +281,8 @@ fixtures = [
             ["name", "in", [
                 "Project Filter on TASK record",
                 "Filter The User",
-                "Confirm Employee Assignment"
+                "Confirm Employee Assignment",
+                "Employee Group Filter"
             ]]
         ]
     },
@@ -293,18 +291,17 @@ fixtures = [
         "filters": [
             ["name", "in", [
                 "Validate Project Assignment Role",
-                "Create Timesheet From Task"
+                "Create Timesheet From Task",
+                "Employee Group Filter"
             ]]
         ]
     }
 ]
-
 
 permission_query_conditions = {
     "Project": "client_customization.permissions.project_query",
     "Task": "client_customization.permissions.task_query",
     "Timesheet": "client_customization.permissions.timesheet_query"
 }
-
 
 
