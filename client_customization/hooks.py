@@ -261,8 +261,6 @@ app_license = "mit"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
-
 fixtures = [
     {
         "dt": "Custom Field",
@@ -295,9 +293,15 @@ fixtures = [
                 "Employee Group Filter"
             ]]
         ]
+    },
+    {
+        "dt": "Custom DocPerm",
+        "filters": [
+            ["parent", "=", "Employee Group"],
+            ["role", "=", "Employee"]
+        ]
     }
 ]
-
 permission_query_conditions = {
     "Project": "client_customization.permissions.project_query",
     "Task": "client_customization.permissions.task_query",
