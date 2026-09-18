@@ -269,7 +269,9 @@ fixtures = [
                 "Project-custom_assign_project_user",
                 "Task-custom_activity_type",
                 "Task-custom_assign_employee",
-                "Task-custom_employee_group"
+                "Task-custom_employee_group",
+                "Task-custom_assigned_by",
+                "Task-custom_assigned_start_date_"
             ]]
         ]
     },
