@@ -5,17 +5,40 @@ def project_query(user):
     if not user:
         user = frappe.session.user
 
+    roles = frappe.get_roles(user)
+
     # Administrator sees all Projects
     if user == "Administrator":
         return ""
-
-    # Projects Manager sees all Projects
-    if "Projects Manager" in frappe.get_roles(user):
+        
+    # Project Admin sees all Projects
+    if "Project Admin" in roles:
         return ""
 
-    # Projects User sees only assigned Projects
-    if "Projects User" in frappe.get_roles(user):
-        return f"`tabProject`.`custom_assign_project_user` = {frappe.db.escape(user)}"
+    # Projects Manager sees assigned Projects OR Projects they created
+    if "Projects Manager" in roles:
+        return f"(`tabProject`.`custom_assign_project_user` = {frappe.db.escape(user)} OR `tabProject`.`owner` = {frappe.db.escape(user)})"
+
+    # Projects User sees only Projects where they are assigned to a Task
+    # (either directly as custom_assign_employee or via custom_employee_group)
+    if "Projects User" in roles:
+        return f"""
+            `tabProject`.`name` IN (
+                SELECT `project`
+                FROM `tabTask`
+                WHERE (
+                    `custom_assign_employee` IN (
+                        SELECT `name` FROM `tabEmployee` WHERE `user_id` = {frappe.db.escape(user)}
+                    )
+                    OR
+                    `custom_employee_group` IN (
+                        SELECT `parent` FROM `tabEmployee Group Table` WHERE `employee` IN (
+                            SELECT `name` FROM `tabEmployee` WHERE `user_id` = {frappe.db.escape(user)}
+                        )
+                    )
+                )
+            )
+        """
 
     # Everyone else sees no Projects
     return "1=0"
@@ -58,13 +81,15 @@ def task_query(user):
     if not user:
         user = frappe.session.user
 
+    roles = frappe.get_roles(user)
+
     # Projects Manager can see all Tasks
-    if "Projects Manager" in frappe.get_roles(user):
+    if "Projects Manager" in roles:
         return ""
 
     # Employee + Projects User:
-    # Can see Tasks they created OR Tasks assigned to them.
-    if "Projects User" in frappe.get_roles(user):
+    # Can see Tasks they created OR Tasks assigned to them directly OR via Employee Group.
+    if "Projects User" in roles:
         return f"""
             (
                 `tabTask`.`owner` = {frappe.db.escape(user)}
@@ -73,6 +98,16 @@ def task_query(user):
                     SELECT `name`
                     FROM `tabEmployee`
                     WHERE `user_id` = {frappe.db.escape(user)}
+                )
+                OR
+                `tabTask`.`custom_employee_group` IN (
+                    SELECT `parent`
+                    FROM `tabEmployee Group Table`
+                    WHERE `employee` IN (
+                        SELECT `name`
+                        FROM `tabEmployee`
+                        WHERE `user_id` = {frappe.db.escape(user)}
+                    )
                 )
             )
         """
