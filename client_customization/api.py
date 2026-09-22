@@ -113,9 +113,21 @@ def employee_group_query(doctype, txt, searchfield, start, page_len, filters):
     if not valid_employees:
         return []
 
+    search_filters = []
+    if txt:
+        search_filters = [
+            ["Employee", "name", "like", f"%{txt}%"],
+            ["Employee", "employee_name", "like", f"%{txt}%"],
+            ["Employee", "user_id", "like", f"%{txt}%"]
+        ]
+
     return frappe.get_all(
         "Employee",
-        filters={"name": ["in", valid_employees], "status": "Active"},
-        fields=["name", "employee_name"],
+        filters={
+            "name": ["in", valid_employees], 
+            "status": "Active"
+        },
+        or_filters=search_filters if txt else None,
+        fields=["name", "employee_name", "user_id"],
         as_list=True
     )

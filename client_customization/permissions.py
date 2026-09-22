@@ -31,9 +31,13 @@ def project_query(user):
                         SELECT `name` FROM `tabEmployee` WHERE `user_id` = {frappe.db.escape(user)}
                     )
                     OR
-                    `custom_employee_group` IN (
-                        SELECT `parent` FROM `tabEmployee Group Table` WHERE `employee` IN (
-                            SELECT `name` FROM `tabEmployee` WHERE `user_id` = {frappe.db.escape(user)}
+                    (
+                        (IFNULL(`custom_assign_employee`, '') = '')
+                        AND
+                        `custom_employee_group` IN (
+                            SELECT `parent` FROM `tabEmployee Group Table` WHERE `employee` IN (
+                                SELECT `name` FROM `tabEmployee` WHERE `user_id` = {frappe.db.escape(user)}
+                            )
                         )
                     )
                 )
@@ -100,13 +104,17 @@ def task_query(user):
                     WHERE `user_id` = {frappe.db.escape(user)}
                 )
                 OR
-                `tabTask`.`custom_employee_group` IN (
-                    SELECT `parent`
-                    FROM `tabEmployee Group Table`
-                    WHERE `employee` IN (
-                        SELECT `name`
-                        FROM `tabEmployee`
-                        WHERE `user_id` = {frappe.db.escape(user)}
+                (
+                    (IFNULL(`tabTask`.`custom_assign_employee`, '') = '')
+                    AND
+                    `tabTask`.`custom_employee_group` IN (
+                        SELECT `parent`
+                        FROM `tabEmployee Group Table`
+                        WHERE `employee` IN (
+                            SELECT `name`
+                            FROM `tabEmployee`
+                            WHERE `user_id` = {frappe.db.escape(user)}
+                        )
                     )
                 )
             )
