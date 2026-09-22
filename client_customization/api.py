@@ -1,5 +1,6 @@
 import frappe
 
+
 @frappe.whitelist()
 def get_users_by_role(role, exclude_role=None):
     users = [
