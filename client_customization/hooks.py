@@ -299,7 +299,7 @@ fixtures = [
     {
         "dt": "Custom DocPerm",
         "filters": [
-            ["parent", "=", "Employee Group"]
+            ["parent", "in", ["Employee Group", "Project", "User"]]
         ]
     }
 ]

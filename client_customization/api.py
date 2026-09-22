@@ -40,69 +40,7 @@ def project_assign_user_query(doctype, txt, searchfield, start, page_len, filter
         as_list=True
     )
 
-def fix_perm():
-    import frappe
-    exists = frappe.db.exists("Custom DocPerm", {"parent": "Project", "role": "Projects Manager"})
-    if not exists:
-        doc = frappe.new_doc("Custom DocPerm")
-        doc.parent = "Project"
-        doc.parenttype = "DocType"
-        doc.parentfield = "permissions"
-        doc.role = "Projects Manager"
-        doc.read = 1
-        doc.write = 1
-        doc.create = 1
-        doc.delete = 1
-        doc.submit = 0
-        doc.cancel = 0
-        doc.amend = 0
-        doc.export = 1
-        doc.import_ = 1
-        doc.report = 1
-        doc.share = 1
-        doc.print = 1
-        doc.email = 1
-        doc.insert(ignore_permissions=True)
-        frappe.db.commit()
-    else:
-        doc = frappe.get_doc("Custom DocPerm", exists)
-        doc.create = 1
-        doc.write = 1
-        doc.save(ignore_permissions=True)
-        frappe.db.commit()
 
-def fix_projects_user_perm():
-    import frappe
-    exists = frappe.db.exists("Custom DocPerm", {"parent": "Project", "role": "Projects User"})
-    if not exists:
-        doc = frappe.new_doc("Custom DocPerm")
-        doc.parent = "Project"
-        doc.parenttype = "DocType"
-        doc.parentfield = "permissions"
-        doc.role = "Projects User"
-        doc.read = 1
-        doc.write = 0
-        doc.create = 0
-        doc.delete = 0
-        doc.submit = 0
-        doc.cancel = 0
-        doc.amend = 0
-        doc.export = 0
-        doc.import_ = 0
-        doc.report = 1
-        doc.share = 0
-        doc.print = 1
-        doc.email = 0
-        doc.insert(ignore_permissions=True)
-        frappe.db.commit()
-    else:
-        doc = frappe.get_doc("Custom DocPerm", exists)
-        doc.read = 1
-        doc.create = 0
-        doc.write = 0
-        doc.delete = 0
-        doc.save(ignore_permissions=True)
-        frappe.db.commit()
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
