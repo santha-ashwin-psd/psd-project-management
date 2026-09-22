@@ -55,5 +55,43 @@
   "reference_doctype": null,
   "script": "# ---------------------------------------------------------\n# Employee Group Filter\n# API Method:\n# get_employee_groups_for_current_user\n# ---------------------------------------------------------\n\ncurrent_user = frappe.session.user\n\n# ---------------------------------------------------------\n# Find Employee linked to current ERPNext User\n# ---------------------------------------------------------\nemployee = frappe.db.get_value(\n    \"Employee\",\n    {\n        \"user_id\": current_user,\n        \"status\": \"Active\"\n    },\n    \"name\"\n)\n\nmanager_roles = frappe.get_all(\n    \"Has Role\",\n    filters={\"parent\": current_user, \"role\": \"Projects Manager\"},\n    limit_page_length=1\n)\nis_manager = len(manager_roles) > 0\n\nif not employee and not is_manager:\n    frappe.response[\"message\"] = {\n        \"employee_groups\": [],\n        \"group_employees\": []\n    }\nelse:\n    # Find Employee Groups\n    if is_manager:\n        groups = frappe.get_all(\"Employee Group\", pluck=\"name\")\n        employee_groups = groups\n    else:\n        groups = frappe.get_all(\n            \"Employee Group Table\",\n            filters={\"employee\": employee},\n            fields=[\"parent\"],\n            limit_page_length=1000\n        )\n        employee_groups = list(set(row.parent for row in groups if row.parent))\n\n    selected_group = frappe.form_dict.get(\"employee_group\")\n    group_employees = []\n\n    if selected_group:\n        if selected_group in employee_groups or is_manager:\n            rows = frappe.get_all(\n                \"Employee Group Table\",\n                filters={\"parent\": selected_group},\n                fields=[\"employee\"],\n                limit_page_length=1000\n            )\n            group_employees = list(set(row.employee for row in rows if row.employee))\n\n    frappe.response[\"message\"] = {\n        \"employee_groups\": employee_groups,\n        \"group_employees\": group_employees\n    }\n",
   "script_type": "API"
+ },
+ {
+  "allow_guest": 0,
+  "api_method": null,
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "Before Insert",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-09-22 13:48:54.013612",
+  "module": null,
+  "name": "Project Auto Assign Manager",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "Project",
+  "script": "\nif not doc.custom_assign_project_user:\n    roles = [d.role for d in frappe.db.get_all(\"Has Role\", filters={\"parent\": frappe.session.user}, fields=[\"role\"])]\n    if \"Projects Manager\" in roles and \"Project Admin\" not in roles and \"System Manager\" not in roles:\n        doc.custom_assign_project_user = frappe.session.user\n",
+  "script_type": "DocType Event"
+ },
+ {
+  "allow_guest": 0,
+  "api_method": null,
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "After Save",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-09-22 13:45:40.287446",
+  "module": null,
+  "name": "Project Auto Create ToDo",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "Project",
+  "script": "\nif doc.has_value_changed(\"custom_assign_project_user\") and doc.custom_assign_project_user:\n    exists = frappe.db.exists(\n        \"ToDo\",\n        {\n            \"reference_type\": doc.doctype,\n            \"reference_name\": doc.name,\n            \"allocated_to\": doc.custom_assign_project_user,\n            \"status\": \"Open\"\n        }\n    )\n    if not exists:\n        try:\n            todo = frappe.get_doc({\n                \"doctype\": \"ToDo\",\n                \"reference_type\": doc.doctype,\n                \"reference_name\": doc.name,\n                \"allocated_to\": doc.custom_assign_project_user,\n                \"description\": \"Project assigned via Manager form selector.\",\n                \"status\": \"Open\",\n                \"priority\": \"Medium\"\n            })\n            todo.insert(ignore_permissions=True)\n        except Exception:\n            pass\n",
+  "script_type": "DocType Event"
  }
 ]

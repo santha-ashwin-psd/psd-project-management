@@ -87,9 +87,21 @@ def task_query(user):
 
     roles = frappe.get_roles(user)
 
-    # Projects Manager can see all Tasks
-    if "Projects Manager" in roles:
+    if user == "Administrator" or "System Manager" in roles or "Project Admin" in roles:
         return ""
+
+    # Projects Manager can see Tasks of their Projects
+    if "Projects Manager" in roles:
+        return f"""
+            (
+                `tabTask`.`project` IN (
+                    SELECT `name`
+                    FROM `tabProject`
+                    WHERE `custom_assign_project_user` = {frappe.db.escape(user)} OR `owner` = {frappe.db.escape(user)}
+                )
+                OR `tabTask`.`owner` = {frappe.db.escape(user)}
+            )
+        """
 
     # Employee + Projects User:
     # Can see Tasks they created OR Tasks assigned to them directly OR via Employee Group.
@@ -127,13 +139,32 @@ def timesheet_query(user):
     if not user:
         user = frappe.session.user
 
-    # Projects Manager can see all Timesheets
-    if "Projects Manager" in frappe.get_roles(user):
+    roles = frappe.get_roles(user)
+
+    if user == "Administrator" or "System Manager" in roles or "Project Admin" in roles:
         return ""
+
+    # Projects Manager can see Timesheets of their Projects
+    if "Projects Manager" in roles:
+        return f"""
+            (
+                `tabTimesheet`.`name` IN (
+                    SELECT `parent`
+                    FROM `tabTimesheet Detail`
+                    WHERE `project` IN (
+                        SELECT `name`
+                        FROM `tabProject`
+                        WHERE `custom_assign_project_user` = {frappe.db.escape(user)} OR `owner` = {frappe.db.escape(user)}
+                    )
+                )
+                OR
+                `tabTimesheet`.`owner` = {frappe.db.escape(user)}
+            )
+        """
 
     # Employee + Projects User:
     # Can see Timesheets they created OR Timesheets belonging to them.
-    if "Projects User" in frappe.get_roles(user):
+    if "Projects User" in roles:
         return f"""
             (
                 `tabTimesheet`.`owner` = {frappe.db.escape(user)}
