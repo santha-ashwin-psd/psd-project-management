@@ -1,5 +1,21 @@
 frappe.provide("erpnext.timesheet");
 
+// Globally patch moment to fix NaN Invalid Date bugs in older browsers/Safari
+// when standard Frappe timesheet.js calls moment("YYYY-MM-DD HH:mm:ss") without a format string.
+if (window.moment && !window._moment_patched_for_frappe) {
+    const original_moment = window.moment;
+    window.moment = function() {
+        if (arguments.length === 1 && typeof arguments[0] === "string") {
+            // Check if string is Frappe datetime format: YYYY-MM-DD HH:mm:ss
+            if (arguments[0].match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/)) {
+                return original_moment(arguments[0], "YYYY-MM-DD HH:mm:ss");
+            }
+        }
+        return original_moment.apply(this, arguments);
+    };
+    Object.assign(window.moment, original_moment);
+    window._moment_patched_for_frappe = true;
+}
 const custom_timer = function (frm, row, timestamp = 0) {
 	let dialog = new frappe.ui.Dialog({
 		title: __("Timer"),
@@ -205,12 +221,21 @@ const custom_control_timer = function (frm, dialog, row, timestamp = 0) {
 	$btn_complete.click(function () {
 		var grid_row = frm.fields_dict["time_logs"].grid.get_row(row.idx - 1);
 		var args = dialog.get_values();
+		
+		let new_from_time = moment(frappe.datetime.now_datetime(), "YYYY-MM-DD HH:mm:ss").subtract(currentIncrement, "seconds").format("YYYY-MM-DD HH:mm:ss");
+		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "from_time", new_from_time);
 		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "completed", 1);
+		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "custom_is_paused", 0);
+		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "custom_pause_start_time", null);
 		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "activity_type", args.activity_type);
 		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "project", args.project);
 		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "task", args.task);
 		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "expected_hours", args.expected_hours);
 		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "to_time", frappe.datetime.get_datetime_as_string());
+		
+		// Overwrite the buggy Frappe calculation that produces NaN/0 in Safari
+		frappe.model.set_value(grid_row.doc.doctype, grid_row.doc.name, "hours", currentIncrement / 3600);
+		
 		frm.save();
 		reset();
 		dialog.hide();
@@ -325,25 +350,20 @@ frappe.ui.form.on("Timesheet", {
                             let timestamp = 0;
                             if (target_row.custom_pause_start_time) {
                                 timestamp = moment(target_row.custom_pause_start_time, "YYYY-MM-DD HH:mm:ss").diff(moment(target_row.from_time, "YYYY-MM-DD HH:mm:ss"), "seconds");
-                                frappe.msgprint(`DEBUG A: pause=${target_row.custom_pause_start_time}, from=${target_row.from_time}, timestamp=${timestamp}`);
                             } else {
                                 timestamp = moment(frappe.datetime.now_datetime(), "YYYY-MM-DD HH:mm:ss").diff(moment(target_row.from_time, "YYYY-MM-DD HH:mm:ss"), "seconds");
-                                frappe.msgprint(`DEBUG B: now=${frappe.datetime.now_datetime()}, from=${target_row.from_time}, timestamp=${timestamp}`);
                             }
                             custom_timer(frm, target_row, timestamp);
                         } else if (!target_row.from_time) {
-                            frappe.msgprint(`DEBUG C: no from_time!`);
                             custom_timer(frm, target_row);
                             frappe.model.set_value(target_row.doctype, target_row.name, "from_time", frappe.datetime.now_datetime());
                             frm.refresh_fields("time_logs");
                             frm.save();
                         } else {
                             let timestamp = moment(frappe.datetime.now_datetime(), "YYYY-MM-DD HH:mm:ss").diff(moment(target_row.from_time, "YYYY-MM-DD HH:mm:ss"), "seconds");
-                            frappe.msgprint(`DEBUG D: now=${frappe.datetime.now_datetime()}, from=${target_row.from_time}, timestamp=${timestamp}`);
                             custom_timer(frm, target_row, timestamp);
                         }
                     } else {
-                        frappe.msgprint(`DEBUG E: no target_row`);
                         custom_timer(frm);
                     }
                 }).addClass("btn-primary");
