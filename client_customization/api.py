@@ -121,3 +121,58 @@ if doc.has_value_changed("custom_assign_project_user") and doc.custom_assign_pro
 
 
 
+
+@frappe.whitelist()
+def add_timer_custom_fields():
+    import frappe
+    from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+    custom_fields = {
+        "Timesheet Detail": [
+            {
+                "fieldname": "custom_is_paused",
+                "label": "Is Paused",
+                "fieldtype": "Check",
+                "insert_after": "completed",
+                "hidden": 1,
+                "default": "0"
+            },
+            {
+                "fieldname": "custom_pause_start_time",
+                "label": "Pause Start Time",
+                "fieldtype": "Datetime",
+                "insert_after": "custom_is_paused",
+                "hidden": 1
+            }
+        ]
+    }
+    create_custom_fields(custom_fields, ignore_validate=True)
+    frappe.db.commit()
+    print("Custom fields added successfully.")
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def project_task_query(doctype, txt, searchfield, start, page_len, filters):
+    """Return tasks limited to a selected project. Intended for the timer Task link get_query.
+
+    Expects filters to include `project`.
+    """
+    project = None
+    if isinstance(filters, dict):
+        project = filters.get("project")
+    # Fallback for array-like filters from the Link field
+    if not project and isinstance(filters, list):
+        for f in filters:
+            if isinstance(f, dict) and f.get("project"):
+                project = f.get("project")
+
+    if not project:
+        return []
+
+    # Return matching tasks (respecting permissions via frappe.get_all)
+    return frappe.get_all(
+        "Task",
+        filters={"project": project},
+        fields=["name", "subject"],
+        as_list=True,
+    )

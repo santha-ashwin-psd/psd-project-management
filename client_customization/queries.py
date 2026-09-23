@@ -20,3 +20,19 @@ def employee_query_for_task(doctype, txt, searchfield, start, page_len, filters)
         ignore_permissions=True
     )
     return [(e.name, e.employee_name) for e in employees]
+
+@frappe.whitelist()
+def get_project_tasks(doctype, txt, searchfield, start, page_len, filters):
+	if isinstance(filters, str):
+		filters = json.loads(filters)
+	project = filters.get("project")
+	if not project:
+		return []
+	tasks = frappe.get_all(
+		"Task",
+		filters={"project": project, "status": ["!=", "Completed"]},
+		fields=["name", "subject"],
+		limit_start=start,
+		limit_page_length=page_len,
+	)
+	return [(t.name, t.subject) for t in tasks]

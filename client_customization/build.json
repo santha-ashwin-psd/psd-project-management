@@ -1,0 +1,5 @@
+{
+    "client_customization/js/custom_timer.js": [
+        "public/js/custom_timer.js"
+    ]
+}

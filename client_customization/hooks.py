@@ -26,7 +26,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/client_customization/css/client_customization.css"
-# app_include_js = "/assets/client_customization/js/client_customization.js"
+# app_include_js = "/assets/client_customization/js/custom_timer_v2.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/client_customization/css/client_customization.css"
@@ -265,7 +265,9 @@ fixtures = [
                 "Task-custom_assign_employee",
                 "Task-custom_employee_group",
                 "Task-custom_assigned_by",
-                "Task-custom_assigned_start_date_"
+                "Task-custom_assigned_start_date_",
+                "Timesheet Detail-custom_is_paused",
+                "Timesheet Detail-custom_pause_start_time"
             ]]
         ]
     },
@@ -276,7 +278,8 @@ fixtures = [
                 "Project Filter on TASK record",
                 "Filter The User",
                 "Confirm Employee Assignment",
-                "Employee Group Filter"
+                "Employee Group Filter",
+                "Timesheet Custom Timer"
             ]]
         ]
     },
