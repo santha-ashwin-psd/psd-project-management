@@ -264,6 +264,7 @@ def task_after_insert(doc, method):
 
 
 def project_after_save(doc, method):
+    frappe.log_error(message=f"Project After Save Triggered for {doc.name}, User: {doc.custom_assign_project_user}, changed: {doc.has_value_changed('custom_assign_project_user')}", title="Project Assignment Debug")
     if doc.has_value_changed("custom_assign_project_user") and doc.custom_assign_project_user:
         exists = frappe.db.exists(
             "ToDo",
@@ -274,6 +275,7 @@ def project_after_save(doc, method):
                 "status": "Open"
             }
         )
+        frappe.log_error(message=f"ToDo exists: {exists}", title="Project Assignment Debug")
         if not exists:
             try:
                 # Project Manager (Gets ONLY System Notification)
@@ -283,5 +285,6 @@ def project_after_save(doc, method):
                     name=doc.name,
                     description="Project assigned via Manager form selector."
                 )
+                frappe.log_error(message=f"Assigned {doc.custom_assign_project_user} successfully", title="Project Assignment Debug")
             except Exception:
                 frappe.log_error(message=frappe.get_traceback(), title="Project Auto Assignment Error")
