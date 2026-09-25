@@ -144,7 +144,14 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-
+doc_events = {
+	"Task": {
+		"after_insert": "client_customization.api.task_after_insert"
+	},
+	"Project": {
+		"on_update": "client_customization.api.project_after_save"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
@@ -299,6 +306,12 @@ fixtures = [
         "dt": "Custom DocPerm",
         "filters": [
             ["parent", "in", ["Employee Group", "Project", "User"]]
+        ]
+    },
+    {
+        "dt": "Email Template",
+        "filters": [
+            ["name", "in", ["Task Assignment"]]
         ]
     }
 ]

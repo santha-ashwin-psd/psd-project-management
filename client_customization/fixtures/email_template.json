@@ -1,0 +1,12 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-25 10:36:36.483816",
+  "name": "Task Assignment",
+  "response": "<p>{{ frappe.session.user }} assigned a new task <b>{{ doc.subject or doc.name }}</b> to you.</p>\n    <p><a href=\"{{ frappe.utils.get_url_to_form(doc.doctype, doc.name) }}\" rel=\"noopener noreferrer\">Open Document</a></p>",
+  "response_html": null,
+  "subject": "Assignment Update on {{ doc.name }}",
+  "use_html": 1
+ }
+]

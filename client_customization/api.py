@@ -176,3 +176,114 @@ def project_task_query(doctype, txt, searchfield, start, page_len, filters):
         fields=["name", "subject"],
         as_list=True,
     )
+
+def assign_without_email(user, doctype, name, description):
+    from frappe.desk.form.assign_to import add as assign_to
+    import frappe.desk.form.assign_to as assign_to_module
+    import frappe.desk.doctype.notification_log.notification_log as nl
+
+    original_enqueue = assign_to_module.enqueue_create_notification
+
+    def custom_enqueue(users, doc, dedupe_on=None):
+        if isinstance(users, str):
+            users = [u.strip() for u in users.split(",") if u.strip()]
+        
+        original_email_check = nl.is_email_notifications_enabled_for_type
+        
+        for u in users:
+            notification = frappe.new_doc("Notification Log")
+            notification.update(doc)
+            notification.for_user = u
+            
+            # Disable email check during insert to prevent emails
+            nl.is_email_notifications_enabled_for_type = lambda user, type: False
+            try:
+                notification.insert(ignore_permissions=True)
+            finally:
+                nl.is_email_notifications_enabled_for_type = original_email_check
+
+    assign_to_module.enqueue_create_notification = custom_enqueue
+    try:
+        assign_to({
+            "assign_to": [user],
+            "doctype": doctype,
+            "name": name,
+            "description": description
+        })
+    finally:
+        assign_to_module.enqueue_create_notification = original_enqueue
+
+
+def task_after_insert(doc, method):
+    from frappe.desk.form.assign_to import add as assign_to
+    
+    # 1. Employee User (Gets Assigned, System Notification & Standard Email)
+    if doc.custom_assign_employee:
+        employee_user = frappe.db.get_value("Employee", doc.custom_assign_employee, "user_id")
+        if employee_user:
+            try:
+                # Add to ToDo and Bell Icon without standard email
+                assign_without_email(
+                    user=employee_user,
+                    doctype=doc.doctype,
+                    name=doc.name,
+                    description=doc.subject or doc.name
+                )
+                
+                # Send exact standard HTML notification
+                employee_email = frappe.db.get_value("User", employee_user, "email")
+                if employee_email:
+                    frappe.sendmail(
+                        recipients=[employee_email],
+                        template="new_notification",
+                        args={
+                            "body_content": f"{frappe.session.user} assigned a new task <b>{doc.subject or doc.name}</b> to you",
+                            "description": f"<div>{doc.subject or doc.name}</div>",
+                            "document_type": doc.doctype,
+                            "document_name": doc.name,
+                            "doc_link": frappe.utils.get_url_to_form(doc.doctype, doc.name)
+                        },
+                        subject=f"Assignment Update on {doc.name}",
+                        header=["Assignment", "orange"]
+                    )
+            except Exception:
+                frappe.log_error(message=frappe.get_traceback(), title="Task Auto Assignment Error (Employee)")
+            
+    # 2. Project User / Project Manager (Gets ONLY Bell Notification, NOT Assigned)
+    if doc.project:
+        project_user = frappe.db.get_value("Project", doc.project, "custom_assign_project_user")
+        if project_user and project_user != doc.custom_assign_employee:
+            try:
+                notification = frappe.new_doc("Notification Log")
+                notification.subject = f"New Task added to Project: {doc.subject or doc.name}"
+                notification.for_user = project_user
+                notification.type = "Alert"
+                notification.document_type = doc.doctype
+                notification.document_name = doc.name
+                notification.insert(ignore_permissions=True)
+            except Exception:
+                frappe.log_error(message=frappe.get_traceback(), title="Task Auto Assignment Error (Project Manager)")
+
+
+def project_after_save(doc, method):
+    if doc.has_value_changed("custom_assign_project_user") and doc.custom_assign_project_user:
+        exists = frappe.db.exists(
+            "ToDo",
+            {
+                "reference_type": doc.doctype,
+                "reference_name": doc.name,
+                "allocated_to": doc.custom_assign_project_user,
+                "status": "Open"
+            }
+        )
+        if not exists:
+            try:
+                # Project Manager (Gets ONLY System Notification)
+                assign_without_email(
+                    user=doc.custom_assign_project_user,
+                    doctype=doc.doctype,
+                    name=doc.name,
+                    description="Project assigned via Manager form selector."
+                )
+            except Exception:
+                frappe.log_error(message=frappe.get_traceback(), title="Project Auto Assignment Error")
