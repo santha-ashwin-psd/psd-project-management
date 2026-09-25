@@ -230,21 +230,19 @@ def task_after_insert(doc, method):
                     description=doc.subject or doc.name
                 )
                 
-                # Send exact standard HTML notification
+                # Send custom HTML notification
                 employee_email = frappe.db.get_value("User", employee_user, "email")
                 if employee_email:
+                    email_template = frappe.get_doc("Email Template", "Task Assignment")
+                    assigner_name = frappe.utils.get_fullname(frappe.session.user)
+                    subject = frappe.render_template(email_template.subject, {"doc": doc, "assigner_name": assigner_name})
+                    message = frappe.render_template(email_template.response, {"doc": doc, "assigner_name": assigner_name})
+                    
                     frappe.sendmail(
                         recipients=[employee_email],
-                        template="new_notification",
-                        args={
-                            "body_content": f"{frappe.session.user} assigned a new task <b>{doc.subject or doc.name}</b> to you",
-                            "description": f"<div>{doc.subject or doc.name}</div>",
-                            "document_type": doc.doctype,
-                            "document_name": doc.name,
-                            "doc_link": frappe.utils.get_url_to_form(doc.doctype, doc.name)
-                        },
-                        subject=f"Assignment Update on {doc.name}",
-                        header=["Assignment", "orange"]
+                        subject=subject,
+                        message=message,
+                        with_container=False
                     )
             except Exception:
                 frappe.log_error(message=frappe.get_traceback(), title="Task Auto Assignment Error (Employee)")
