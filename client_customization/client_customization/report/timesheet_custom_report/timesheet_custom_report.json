@@ -35,34 +35,43 @@
  "idx": 0,
  "is_standard": "Yes",
  "letter_head": null,
- "modified": "2026-09-18 16:03:19.117044",
+ "modified": "2026-09-25 13:22:42.185182",
  "modified_by": "Administrator",
  "module": "Client Customization",
  "name": "Timesheet Custom Report",
  "owner": "Administrator",
  "prepared_report": 0,
- "query": "SELECT\n    ts.name AS \"Timesheet:Link/Timesheet:150\",\n    ts.employee AS \"Employee:Link/Employee:150\",\n    ts.employee_name AS \"Employee Name:180\",\n    tl.task AS \"Task:Link/Task:150\",\n    p.project_name As \"Project\",\n    t.subject AS \"Task Subject:Data:200\",\n    t.description AS \"Task Description\",\n    t.status AS \"Task Status:Data:120\",\n    tl.activity_type AS \"Activity Type:150\",\n    tl.from_time AS \"From Time:Datetime:160\",\n    tl.to_time AS \"To Time:Datetime:160\",\n    tl.hours AS \"Hours:Float:100\",\n    t.custom_assigned_by AS \"Assigned By:Data:150\",\n    t.custom_assigned_start_date_ AS \"Assigned Start Date:Datetime:180\"\nFROM\n    `tabTimesheet` ts\nINNER JOIN\n    `tabTimesheet Detail` tl\n    ON tl.parent = ts.name\nLEFT JOIN\n    `tabTask` t\n    ON t.name = tl.task\nLEFT JOIN\n    `tabProject` p\n    ON p.name = t.project\nWHERE\n    ts.docstatus < 2\n    AND (%(employee)s IS NULL OR %(employee)s = '' OR ts.employee = %(employee)s)\n    AND (%(from_time)s IS NULL OR %(from_time)s = '' OR tl.from_time >= %(from_time)s)\n    AND (%(to_time)s IS NULL OR %(to_time)s = '' OR tl.to_time <= %(to_time)s)\nORDER BY\n    ts.start_date DESC,\n    ts.name DESC;",
+ "query": "SELECT\n    ts.name AS \"Timesheet:Link/Timesheet:150\",\n    ts.employee AS \"Employee:Link/Employee:150\",\n    ts.employee_name AS \"Employee Name:180\",\n    tl.task AS \"Task:Link/Task:150\",\n    p.project_name As \"Project\",\n    t.subject AS \"Task Subject:Data:200\",\n    t.description AS \"Task Description\",\n    t.status AS \"Task Status:Data:120\",\n    tl.activity_type AS \"Activity Type:150\",\n    tl.from_time AS \"From Time:Datetime:160\",\n    tl.to_time AS \"To Time:Datetime:160\",\n    tl.hours AS \"Hours:Float:100\",\n    t.custom_assigned_by AS \"Assigned By:Data:150\",\n    t.custom_assigned_start_date_ AS \"Assigned Start Date:Datetime:180\"\nFROM\n    `tabTimesheet` ts\nINNER JOIN\n    `tabTimesheet Detail` tl\n    ON tl.parent = ts.name\nLEFT JOIN\n    `tabTask` t\n    ON t.name = tl.task\nLEFT JOIN\n    `tabProject` p\n    ON p.name = t.project\nWHERE\n    ts.docstatus < 2\n    \n    AND (%(employee)s IS NULL OR %(employee)s = \"\" OR ts.employee = %(employee)s)\n    AND (%(from_time)s IS NULL OR %(from_time)s = \"\" OR tl.from_time >= %(from_time)s)\n    AND (%(to_time)s IS NULL OR %(to_time)s = \"\" OR tl.to_time <= %(to_time)s)\n    \nORDER BY\n    ts.start_date DESC,\n    ts.name DESC;",
  "ref_doctype": "Timesheet",
  "report_name": "Timesheet Custom Report",
- "report_type": "Script Report",
+ "report_type": "Query Report",
  "roles": [
   {
    "role": "Employee"
   },
   {
-   "role": "HR User"
-  },
-  {
    "role": "Projects User"
   },
   {
-   "role": "Manufacturing User"
+   "role": "Projects Manager"
+  },
+  {
+   "role": "Project Admin"
+  },
+  {
+   "role": "System Manager"
   },
   {
    "role": "HR Manager"
   },
   {
+   "role": "HR User"
+  },
+  {
    "role": "Accounts User"
+  },
+  {
+   "role": "Manufacturing User"
   }
  ],
  "snapshot_report": 0,

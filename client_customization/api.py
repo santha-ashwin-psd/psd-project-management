@@ -250,7 +250,7 @@ def task_after_insert(doc, method):
     # 2. Project User / Project Manager (Gets ONLY Bell Notification, NOT Assigned)
     if doc.project:
         project_user = frappe.db.get_value("Project", doc.project, "custom_assign_project_user")
-        if project_user and project_user != doc.custom_assign_employee:
+        if project_user and (not employee_user or project_user != employee_user):
             try:
                 notification = frappe.new_doc("Notification Log")
                 notification.subject = f"New Task added to Project: {doc.subject or doc.name}"
@@ -278,13 +278,14 @@ def project_after_save(doc, method):
         frappe.log_error(message=f"ToDo exists: {exists}", title="Project Assignment Debug")
         if not exists:
             try:
-                # Project Manager (Gets ONLY System Notification)
-                assign_without_email(
-                    user=doc.custom_assign_project_user,
-                    doctype=doc.doctype,
-                    name=doc.name,
-                    description="Project assigned via Manager form selector."
-                )
+                from frappe.desk.form.assign_to import add as assign_to
+                # Project Manager gets Standard System Notification and Email
+                assign_to({
+                    "assign_to": [doc.custom_assign_project_user],
+                    "doctype": doc.doctype,
+                    "name": doc.name,
+                    "description": "Project assigned via Manager form selector."
+                })
                 frappe.log_error(message=f"Assigned {doc.custom_assign_project_user} successfully", title="Project Assignment Debug")
             except Exception:
                 frappe.log_error(message=frappe.get_traceback(), title="Project Auto Assignment Error")
